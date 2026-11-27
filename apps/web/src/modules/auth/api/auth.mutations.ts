@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 
 import { useAuthStore } from "@/app/store/auth.store"
+import { getErrorMessage } from "@/shared/api"
 
 import { authKeys } from "./auth.keys"
 import { login, logout } from "./auth.service"
@@ -12,11 +14,12 @@ export function useLogin() {
   return useMutation({
     mutationFn: login,
     onSuccess: (session) => {
-      queryClient.clear()
+      // La suscripción de REQ-112 limpia la caché al cambiar la identidad.
       setSession({
         user: session.user,
         accessToken: session.accessToken,
         refreshToken: session.refreshToken,
+        expiresIn: session.expiresIn,
       })
       queryClient.setQueryData(authKeys.me(), session.user)
     },
@@ -24,18 +27,21 @@ export function useLogin() {
 }
 
 export function useLogout() {
-  const queryClient = useQueryClient()
-  const refreshToken = useAuthStore((state) => state.refreshToken)
   const clearSession = useAuthStore((state) => state.clearSession)
 
   return useMutation({
-    mutationFn: async () => {
-      if (!refreshToken) return
-      await logout(refreshToken)
+    mutationFn: () => {
+      // Se leen en el momento de la mutación para no usar un closure obsoleto.
+      const { refreshToken, accessToken } = useAuthStore.getState()
+      return logout(refreshToken, accessToken)
+    },
+    onError: (error) => {
+      toast.warning(
+        `No se pudo invalidar la sesión en el servidor: ${getErrorMessage(error)}. La sesión local se cerró de todos modos.`,
+      )
     },
     onSettled: () => {
       clearSession()
-      queryClient.clear()
     },
   })
 }

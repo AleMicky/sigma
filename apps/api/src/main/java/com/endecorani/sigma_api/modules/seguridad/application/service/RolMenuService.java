@@ -14,10 +14,12 @@ import com.endecorani.sigma_api.modules.seguridad.infrastructure.persistence.rep
 import com.endecorani.sigma_api.modules.seguridad.infrastructure.persistence.repository.RolMenuJpaRepository;
 import com.endecorani.sigma_api.modules.seguridad.infrastructure.persistence.repository.UsuarioJpaRepository;
 import com.endecorani.sigma_api.modules.seguridad.infrastructure.persistence.repository.UsuarioRolJpaRepository;
+import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,16 +76,24 @@ public class RolMenuService {
         return menuService.buildArbolFromMenus(menus);
     }
 
+    /**
+     * REQ-SEG-007: {@code menuIds} ausente o {@code null} es inválido y NO modifica las
+     * asignaciones existentes. La lista vacía {@code []} es una limpieza explícita.
+     */
     @Transactional
     public List<UUID> asignarMenus(UUID rolId, AsignarMenusRolRequest request) {
+        if (request == null || request.getMenuIds() == null) {
+            throw new BusinessException(
+                    "VALIDATION_ERROR",
+                    "El campo menuIds es obligatorio; envíe [] para limpiar las asignaciones del rol"
+            );
+        }
         validarRolExiste(rolId);
 
-        List<UUID> menuIds = request.getMenuIds() != null
-                ? request.getMenuIds().stream()
-                        .filter(Objects::nonNull)
-                        .distinct()
-                        .toList()
-                : List.of();
+        List<UUID> menuIds = request.getMenuIds().stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
 
         for (UUID menuId : menuIds) {
             if (!menuRepository.existsById(menuId)) {
@@ -101,9 +111,9 @@ public class RolMenuService {
             return List.of();
         }
 
+        // REQ-SEG-114: misma invariante que SecurityUtils; el alias "ADMIN" no otorga privilegios.
         boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_ADMIN")
-                        || a.getAuthority().equalsIgnoreCase("ADMIN"));
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
 
         if (isAdmin) {
             return menuService.buildArbol();
@@ -124,14 +134,21 @@ public class RolMenuService {
         }
 
         // 2. Roles asignados en base de datos local (Usuario -> UsuarioRol)
-        String principalName = authentication.getName();
-        if (principalName != null && !principalName.isBlank()) {
-            usuarioJpaRepository.findByKeycloakUserId(principalName)
+        // REQ-SEG-009: keycloak_user_id es el "sub" del JWT; getName() es preferred_username.
+        String keycloakUserId = authentication.getPrincipal() instanceof Jwt jwt
+                ? jwt.getSubject()
+                : null;
+        if (keycloakUserId != null && !keycloakUserId.isBlank()) {
+            usuarioJpaRepository.findByKeycloakUserId(keycloakUserId)
                     .ifPresent(usuario -> {
                         List<UsuarioRolEntity> userRoles = usuarioRolJpaRepository
                                 .findActiveRolesByUsuarioId(usuario.getId());
                         userRoles.forEach(ur -> rolIds.add(ur.getRol().getId()));
                     });
+        }
+
+        String principalName = authentication.getName();
+        if (principalName != null && !principalName.isBlank()) {
             usuarioJpaRepository.findByUsernameIgnoreCase(principalName)
                     .ifPresent(usuario -> {
                         List<UsuarioRolEntity> userRoles = usuarioRolJpaRepository

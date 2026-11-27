@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.seguridad.application.service;
 
+import com.endecorani.sigma_api.config.security.SecurityUtils;
 import com.endecorani.sigma_api.modules.seguridad.domain.model.Rol;
 import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
 import com.endecorani.sigma_api.modules.seguridad.domain.repository.KeycloakUsuarioProvider;
@@ -10,6 +11,7 @@ import com.endecorani.sigma_api.modules.seguridad.infrastructure.persistence.ent
 import com.endecorani.sigma_api.modules.seguridad.infrastructure.persistence.repository.RolJpaRepository;
 import com.endecorani.sigma_api.modules.seguridad.infrastructure.persistence.repository.UsuarioJpaRepository;
 import com.endecorani.sigma_api.modules.seguridad.infrastructure.persistence.repository.UsuarioRolJpaRepository;
+import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ public class UsuarioSyncService {
     private final RolJpaRepository rolJpaRepository;
     private final UsuarioRolJpaRepository usuarioRolJpaRepository;
     private final RolSyncService rolSyncService;
+    private final SecurityUtils securityUtils;
 
     @Transactional
     public int sincronizarTodos() {
@@ -61,6 +64,13 @@ public class UsuarioSyncService {
 
             // 3. Sincronizar roles asignados al usuario en la tabla seguridad.usuarios_roles
             sincronizarRolesDeUsuario(usuarioGuardado);
+
+            // 4. REQ-SEG-009: un usuario desactivado en Keycloak no debe seguir resolviéndose
+            // desde la caché de auditoría con su estado anterior.
+            if (!usuarioGuardado.isActivo()) {
+                securityUtils.invalidateUser(
+                        usuarioGuardado.getKeycloakUserId(), usuarioGuardado.getUsername());
+            }
         }
 
         return usuariosKeycloak.size();
@@ -76,7 +86,23 @@ public class UsuarioSyncService {
             return;
         }
 
-        List<Rol> rolesKeycloak = keycloakUsuarioProvider.obtenerRolesDeUsuario(usuario.getKeycloakUserId());
+        // REQ-SEG-002: "sin roles" (lista vacía) es un sync legítimo; un fallo de la consulta
+        // es un error 422 KEYCLOAK_SYNC_ERROR y no debe interpretarse como "sin roles".
+        List<Rol> rolesKeycloak;
+        try {
+            rolesKeycloak = keycloakUsuarioProvider.obtenerRolesDeUsuario(usuario.getKeycloakUserId());
+        } catch (BusinessException ex) {
+            log.error("REQ-SEG-002: fallo al consultar roles en Keycloak para el usuario {}; " +
+                    "no se desactivará ningún rol local", usuario.getKeycloakUserId(), ex);
+            throw new BusinessException("KEYCLOAK_SYNC_ERROR", ex.getMessage());
+        } catch (RuntimeException ex) {
+            log.error("REQ-SEG-002: error inesperado al consultar roles en Keycloak para el usuario {}; " +
+                    "no se desactivará ningún rol local", usuario.getKeycloakUserId(), ex);
+            throw new BusinessException(
+                    "KEYCLOAK_SYNC_ERROR",
+                    "No se pudieron sincronizar los roles del usuario desde Keycloak: " + ex.getMessage()
+            );
+        }
         List<UsuarioRolEntity> rolesActuales = usuarioRolJpaRepository.findByUsuarioId(usuario.getId());
 
         Set<UUID> rolesKeycloakIds = new HashSet<>();

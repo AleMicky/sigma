@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
@@ -70,30 +69,19 @@ public class SecurityUtils {
 
     /**
      * Verifica si el usuario autenticado tiene rol de administrador.
+     *
+     * <p>REQ-SEG-001: la decisión se basa únicamente en la authority canónica
+     * {@code ROLE_ADMIN}. Ni el nombre del principal ni {@code preferred_username}
+     * otorgan privilegios: cualquier token con autoridades de operador debe ser
+     * tratado como no administrador aunque su usuario se llame "admin".</p>
      */
     public boolean isAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             return false;
         }
-        String name = auth.getName();
-        if (name != null && name.trim().equalsIgnoreCase("admin")) {
-            return true;
-        }
-        if (auth.getPrincipal() instanceof Jwt jwt) {
-            String pref = jwt.getClaimAsString("preferred_username");
-            if (pref != null && pref.trim().equalsIgnoreCase("admin")) {
-                return true;
-            }
-        }
         return auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .map(String::toUpperCase)
-                .map(a -> a.replaceFirst("^(ROLE_|ROL_)", "").trim())
-                .anyMatch(a -> a.equals("ADMIN")
-                        || a.equals("SUPERADMIN")
-                        || a.equals("SUPER_ADMIN")
-                        || a.equals("ADMINISTRADOR"));
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
     }
 
     /**

@@ -75,6 +75,7 @@ export function LoginForm({
       <form
         className="flex flex-col gap-5"
         autoComplete="off"
+        aria-busy={loginMutation.isPending}
         onSubmit={(e) => {
           e.preventDefault()
           e.stopPropagation()
@@ -86,6 +87,13 @@ export function LoginForm({
             {(field) => {
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
+              const errorId = `${field.name}-error`
+              const describedBy = [
+                isInvalid ? errorId : null,
+                formError ? "login-form-error" : null,
+              ]
+                .filter(Boolean)
+                .join(" ")
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
@@ -104,11 +112,12 @@ export function LoginForm({
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
                       aria-invalid={isInvalid}
+                      aria-describedby={describedBy || undefined}
                       className="h-11 pl-10 pr-3 rounded-xl bg-muted/30 border-border/70 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:border-primary transition-all text-sm"
                     />
                   </div>
                   {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
+                    <FieldError id={errorId} errors={field.state.meta.errors} />
                   )}
                 </Field>
               )
@@ -119,6 +128,13 @@ export function LoginForm({
             {(field) => {
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
+              const errorId = `${field.name}-error`
+              const describedBy = [
+                isInvalid ? errorId : null,
+                formError ? "login-form-error" : null,
+              ]
+                .filter(Boolean)
+                .join(" ")
 
               return (
                 <Field data-invalid={isInvalid || undefined}>
@@ -137,6 +153,7 @@ export function LoginForm({
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
                       aria-invalid={isInvalid}
+                      aria-describedby={describedBy || undefined}
                       className="h-11 pl-10 pr-10 rounded-xl bg-muted/30 border-border/70 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:border-primary transition-all text-sm"
                     />
                     <Button
@@ -146,7 +163,7 @@ export function LoginForm({
                       className="absolute top-1/2 right-1.5 -translate-y-1/2 size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-transparent"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => setShowPassword((prev) => !prev)}
-                      tabIndex={-1}
+                      aria-pressed={showPassword}
                       aria-label={
                         showPassword
                           ? "Ocultar contraseña"
@@ -157,7 +174,7 @@ export function LoginForm({
                     </Button>
                   </div>
                   {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
+                    <FieldError id={errorId} errors={field.state.meta.errors} />
                   )}
                 </Field>
               )
@@ -167,7 +184,7 @@ export function LoginForm({
           {formError ? (
             <div className="rounded-xl border border-destructive/35 bg-destructive/10 p-3.5 text-xs text-destructive flex items-start gap-2.5 animate-in fade-in slide-in-from-top-1">
               <AlertCircle className="size-4 shrink-0 mt-0.5" />
-              <p role="alert" className="font-medium leading-relaxed">{formError}</p>
+              <p id="login-form-error" role="alert" className="font-medium leading-relaxed">{formError}</p>
             </div>
           ) : null}
 
@@ -180,6 +197,7 @@ export function LoginForm({
                   type="submit"
                   size="lg"
                   disabled={!canSubmit || isSubmitting}
+                  aria-busy={isSubmitting}
                   className="h-11.5 w-full rounded-xl font-semibold shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.005] active:scale-[0.99] gap-2 text-sm"
                 >
                   {isSubmitting ? (

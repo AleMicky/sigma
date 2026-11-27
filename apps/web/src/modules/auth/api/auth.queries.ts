@@ -8,5 +8,7 @@ export const authQueries = {
     queryOptions({
       queryKey: authKeys.me(),
       queryFn: getCurrentUser,
+      staleTime: 0,
+      refetchOnMount: "always",
     }),
 };

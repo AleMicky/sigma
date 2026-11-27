@@ -7,11 +7,14 @@ import com.endecorani.sigma_api.modules.auth.application.dto.KeycloakTokenRespon
 import com.endecorani.sigma_api.modules.auth.application.dto.LoginRequest;
 import com.endecorani.sigma_api.modules.auth.application.dto.LogoutRequest;
 import com.endecorani.sigma_api.modules.auth.application.dto.RefreshTokenRequest;
+import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import com.endecorani.sigma_api.shared.domain.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
@@ -27,9 +30,11 @@ import java.util.List;
 public class AuthService {
 
     private static final String ROLE_PREFIX = "ROLE_";
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final KeycloakTokenClient keycloakTokenClient;
     private final JsonMapper jsonMapper;
+    private final JwtDecoder jwtDecoder;
 
     public AuthTokenResponse login(LoginRequest request) {
         KeycloakTokenResponse tokens = keycloakTokenClient.passwordGrant(
@@ -46,8 +51,43 @@ public class AuthService {
         return toAuthTokenResponse(tokens);
     }
 
-    public void logout(LogoutRequest request) {
+    /**
+     * REQ-SEG-010: el logout sigue siendo público (sin exigir Bearer). Cuando el cliente
+     * envía un Bearer, se valida el JWT y se comprueba que su {@code sub} coincide con el
+     * del refresh token; así no se puede invalidar la sesión de otro usuario.
+     */
+    public void logout(LogoutRequest request, String authorization) {
+        if (authorization != null && authorization.trim()
+                .regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
+            String token = authorization.trim().substring(BEARER_PREFIX.length()).trim();
+            if (token.isEmpty()) {
+                throw new UnauthorizedException("El header Authorization no contiene un Bearer token");
+            }
+
+            Jwt jwt;
+            try {
+                jwt = jwtDecoder.decode(token);
+            } catch (JwtException | IllegalArgumentException exception) {
+                throw new UnauthorizedException("El Bearer token enviado no es válido");
+            }
+
+            String refreshTokenSubject = refreshTokenSubject(request.refreshToken());
+            if (jwt.getSubject() == null || refreshTokenSubject == null
+                    || !jwt.getSubject().equals(refreshTokenSubject)) {
+                throw new ForbiddenException(
+                        "El refresh token no pertenece al usuario autenticado");
+            }
+        }
+
         keycloakTokenClient.logout(request.refreshToken());
+    }
+
+    private String refreshTokenSubject(String refreshToken) {
+        try {
+            return textOrNull(parseJwtPayload(refreshToken), "sub");
+        } catch (UnauthorizedException exception) {
+            return null;
+        }
     }
 
     public AuthUserResponse getCurrentUser(Authentication authentication) {

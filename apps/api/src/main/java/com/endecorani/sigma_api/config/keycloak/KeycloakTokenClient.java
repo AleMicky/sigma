@@ -1,6 +1,7 @@
 package com.endecorani.sigma_api.config.keycloak;
 
 import com.endecorani.sigma_api.modules.auth.application.dto.KeycloakTokenResponse;
+import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,35 @@ public class KeycloakTokenClient {
     public KeycloakTokenResponse clientCredentialsGrant() {
         MultiValueMap<String, String> form = baseForm("client_credentials");
         return exchange(form);
+    }
+
+    /**
+     * REQ-SEG-006: token de cuenta de servicio para la Admin API. Los motivos del token
+     * endpoint se registran en el log y nunca se reenvían al cliente como cuerpo crudo.
+     */
+    public KeycloakTokenResponse adminApiClientCredentialsGrant() {
+        try {
+            return clientCredentialsGrant();
+        } catch (KeycloakUnavailableException exception) {
+            log.error("REQ-SEG-006: Keycloak no disponible al solicitar token de cuenta de servicio", exception);
+            throw new BusinessException(
+                    "KEYCLOAK_UNAVAILABLE",
+                    "Keycloak no está disponible. Intente nuevamente más tarde"
+            );
+        } catch (UnauthorizedException exception) {
+            log.error("REQ-SEG-006: cuenta de servicio rechazada por Keycloak", exception);
+            throw new BusinessException(
+                    "KEYCLOAK_SYNC_ERROR",
+                    "No se pudo autenticar con Keycloak Admin API con la cuenta de servicio configurada"
+            );
+        }
+    }
+
+    /** Subtipo que permite distinguir un fallo de red del rechazo de credenciales. */
+    public static class KeycloakUnavailableException extends UnauthorizedException {
+        public KeycloakUnavailableException(String message) {
+            super(message);
+        }
     }
 
     public void logout(String refreshToken) {
@@ -108,6 +138,11 @@ public class KeycloakTokenClient {
                     exception.getStatusCode().value(),
                     detail
             );
+            // REQ-SEG-115: un 5xx del token endpoint es indisponibilidad del servidor,
+            // no una credencial rechazada. El caller de client_credentials lo traduce a 503.
+            if (exception.getStatusCode().is5xxServerError()) {
+                throw new KeycloakUnavailableException(detail);
+            }
             throw new UnauthorizedException(detail);
         } catch (UnauthorizedException exception) {
             throw exception;
@@ -117,7 +152,7 @@ public class KeycloakTokenClient {
                     url,
                     exception.getMessage()
             );
-            throw new UnauthorizedException(
+            throw new KeycloakUnavailableException(
                     "Keycloak no respondió a tiempo (" + url
                             + "). Revisa red/firewall o que el servidor Keycloak esté arriba"
             );

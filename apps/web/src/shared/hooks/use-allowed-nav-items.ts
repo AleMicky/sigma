@@ -9,12 +9,16 @@ import type { MenuTreeNode } from "@/modules/seguridad/menu/api/menu.service"
 import { resolveLucideIcon } from "@/modules/seguridad/menu/lib/menu-icons"
 import type { NavNode, NavSection } from "@/shared/types/nav.types"
 
+/** Allowlist exacta de roles administradores emitidos por el cliente SIGMA. */
+export const ADMIN_ROLE_ALLOWLIST = new Set(["ADMIN", "ROLE_ADMIN"])
+
 export function isAdminUser(roles?: string[] | null): boolean {
   if (!Array.isArray(roles)) return false
-  return roles.some((role) => {
-    const normalized = role.trim().toUpperCase()
-    return normalized === "ADMIN" || normalized === "ROLE_ADMIN"
-  })
+  return roles.some(
+    (role) =>
+      typeof role === "string" &&
+      ADMIN_ROLE_ALLOWLIST.has(role.trim().toUpperCase()),
+  )
 }
 
 export function normalizeRoutePath(path: string): string {
@@ -86,69 +90,174 @@ export function collectAllowedMenuRoutes(nodes: unknown): string[] {
   return Array.from(collected)
 }
 
-interface DerivedRouteRule {
-  matches: (normalizedPath: string) => boolean
-  requiredAnyOf: string[]
+/**
+ * Submódulos documentados (padre → hijos). Cualquier otra ruta se compara
+ * de forma exacta: poseer `solicitudes` NO habilita `salidas` ni
+ * `asignaciones`, y poseer `ordenes-trabajo` NO habilita `encargado`.
+ * `:parametro` representa un segmento dinámico de la ruta TanStack.
+ */
+export const DOCUMENTED_SUBMODULE_ROUTES: Readonly<
+  Record<string, readonly string[]>
+> = {
+  "/activos/catalogo": ["/activos/catalogo/:activoId"],
+  "/activos/registro-activo": [
+    "/activos/registro-activo/nuevo",
+    "/activos/registro-activo/:activoId/editar",
+  ],
+  "/activos/incidentes": ["/activos/incidentes/:id"],
+  "/activos/configuraciones": [
+    "/activos/configuraciones/tipos-activo",
+    "/activos/configuraciones/categorias-activos",
+    "/activos/configuraciones/accesorios",
+    "/activos/configuraciones/tipos-documento",
+    "/activos/configuraciones/estados-operativos",
+  ],
+  "/inventarios": [
+    "/inventarios/nuevo",
+    "/inventarios/:insumoId/editar",
+    "/inventarios/categorias",
+    "/inventarios/tipos-insumo",
+  ],
+  "/inventarios/tipos-insumo": [
+    "/inventarios/tipos-insumo/:tipoInsumoId",
+    "/inventarios/tipos-insumo/:tipoInsumoId/atributos",
+  ],
+  "/mantenimientos/solicitudes": [
+    "/mantenimientos/solicitudes/nueva",
+    "/mantenimientos/solicitudes/:solicitudId/editar",
+  ],
+  "/mantenimientos/ordenes-trabajo": ["/mantenimientos/ordenes-trabajo/nuevo"],
+  "/mantenimientos/controles-activos": [
+    "/mantenimientos/controles-activos/nuevo",
+  ],
+  "/gestion-vehicular/solicitudes": [
+    "/gestion-vehicular/solicitudes/nueva",
+    "/gestion-vehicular/solicitudes/:solicitudId/editar",
+  ],
+  "/gestion-vehicular/salidas": ["/gestion-vehicular/salidas/:salidaId"],
+  "/gestion-vehicular/vehiculos": ["/gestion-vehicular/vehiculos/:vehiculoId"],
+  "/gestion-vehicular/configuraciones": [
+    "/gestion-vehicular/configuraciones/conductores",
+    "/gestion-vehicular/configuraciones/flotas",
+    "/gestion-vehicular/configuraciones/tipos-solicitud",
+  ],
+  "/gestion-vehicular/reportes": [
+    "/gestion-vehicular/reportes/bitacora",
+    "/gestion-vehicular/reportes/porteria",
+    "/gestion-vehicular/reportes/consumo-combustible",
+    "/gestion-vehicular/reportes/historial-viajes",
+    "/gestion-vehicular/reportes/salidas-vehiculares",
+    "/gestion-vehicular/reportes/solicitudes-vehiculares",
+  ],
+  "/parametros": [
+    "/parametros/gestion",
+    "/parametros/catalogos",
+    "/parametros/tipos-dato",
+    "/parametros/ubicaciones",
+    "/parametros/unidades-medida",
+  ],
+  "/organizacion": [
+    "/organizacion/empleados",
+    "/organizacion/areas",
+    "/organizacion/cargos",
+    "/organizacion/personas",
+    "/organizacion/responsabilidades",
+    "/organizacion/grupos-aprobadores",
+    "/organizacion/migraciones",
+  ],
+  "/seguridad": [
+    "/seguridad/usuarios",
+    "/seguridad/roles",
+    "/seguridad/menus",
+  ],
+} as const
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
-const DERIVED_OPERATIONAL_ROUTE_RULES: DerivedRouteRule[] = [
-  {
-    // Controles vehiculares abiertos desde Mis Viajes, Solicitudes, Asignaciones, Salidas o Vehículos
-    matches: (path) =>
-      path === "/gestion-vehicular/controles-activos" ||
-      path.startsWith("/gestion-vehicular/controles-activos/"),
-    requiredAnyOf: [
-      "/gestion-vehicular/mis-viajes",
-      "/gestion-vehicular/solicitudes",
-      "/gestion-vehicular/asignaciones",
-      "/gestion-vehicular/salidas",
-      "/gestion-vehicular/vehiculos",
-    ],
-  },
-  {
-    // Ficha de detalle de activo (/activos/catalogo/$activoId) abierta desde otras vistas de activos
-    matches: (path) => path.startsWith("/activos/catalogo/") && path.length > "/activos/catalogo/".length,
-    requiredAnyOf: [
-      "/activos/catalogo",
-      "/activos/registro-activo",
-      "/activos/disponibilidad",
-      "/activos/consulta-documentos",
-    ],
-  },
-  {
-    // Formularios operativos de órdenes y controles abiertos desde bandejas de mantenimiento
-    matches: (path) =>
-      path === "/mantenimientos/ordenes-trabajo/nuevo" ||
-      path.startsWith("/mantenimientos/ordenes-trabajo/nuevo/") ||
-      path === "/mantenimientos/controles-activos/nuevo" ||
-      path.startsWith("/mantenimientos/controles-activos/nuevo/"),
-    requiredAnyOf: [
-      "/mantenimientos/ordenes-trabajo",
-      "/mantenimientos/controles-activos",
-      "/mantenimientos/encargado",
-      "/mantenimientos/supervisor",
-      "/mantenimientos/solicitudes",
-    ],
-  },
-]
+/** Coincidencia exacta de hoja, con soporte para segmentos `:param`. */
+function matchesRoutePattern(path: string, allowedRoute: string): boolean {
+  if (!allowedRoute.includes(":")) {
+    return path === allowedRoute
+  }
 
-function matchesAllowedPrefix(normalizedPath: string, normalizedAllowedRoutes: string[]): boolean {
-  return normalizedAllowedRoutes.some((allowed) => {
-    if (!allowed || allowed === routes.home) {
-      return false
-    }
-
-    return (
-      normalizedPath === allowed ||
-      normalizedPath.startsWith(`${allowed}/`)
+  const pattern = allowedRoute
+    .split("/")
+    .map((segment) =>
+      segment.startsWith(":") ? "[^/]+" : escapeRegExp(segment),
     )
-  })
+    .join("/")
+
+  return new RegExp(`^${pattern}$`).test(path)
+}
+
+function flattenMenuNodes(
+  nodes: MenuTreeNode[],
+  collected: MenuTreeNode[] = [],
+): MenuTreeNode[] {
+  for (const node of nodes) {
+    if (!node || node.activo === false) continue
+    collected.push(node)
+    if (Array.isArray(node.hijos)) {
+      flattenMenuNodes(node.hijos, collected)
+    }
+  }
+  return collected
+}
+
+/** Descendientes con ruta propia, siguiendo `menuPadreId` del árbol de menús. */
+function collectMenuDescendantRoutes(
+  parentRoute: string,
+  nodes: MenuTreeNode[],
+): string[] {
+  const flatNodes = flattenMenuNodes(nodes)
+  const descendants: string[] = []
+  const visited = new Set<string>()
+  const queue = flatNodes
+    .filter(
+      (node) =>
+        node.ruta && normalizeRoutePath(node.ruta) === parentRoute,
+    )
+    .map((node) => node.id)
+
+  while (queue.length > 0) {
+    const parentId = queue.shift()
+    if (!parentId) continue
+
+    for (const node of flatNodes) {
+      if (
+        node.menuPadreId === parentId &&
+        node.ruta &&
+        !visited.has(node.id)
+      ) {
+        descendants.push(normalizeRoutePath(node.ruta))
+        visited.add(node.id)
+        queue.push(node.id)
+      }
+    }
+  }
+
+  return descendants
+}
+
+function getAuthorizedChildRoutes(
+  parentRoute: string,
+  menuTree: unknown,
+): string[] {
+  const documented = DOCUMENTED_SUBMODULE_ROUTES[parentRoute] ?? []
+  const fromMenu = collectMenuDescendantRoutes(
+    parentRoute,
+    extractMenuTreeNodes(menuTree),
+  )
+  return Array.from(new Set([...documented, ...fromMenu]))
 }
 
 export function isRouteAuthorized(
   pathname: string,
   allowedRoutes: string[],
   userRoles?: string[] | null,
+  menuTree: unknown = null,
 ): boolean {
   if (isAdminUser(userRoles)) {
     return true
@@ -161,18 +270,20 @@ export function isRouteAuthorized(
 
   const normalizedAllowedRoutes = allowedRoutes
     .map((rawAllowed) => normalizeRoutePath(rawAllowed))
-    .filter(Boolean)
+    .filter((allowed) => allowed && allowed !== routes.home)
 
-  if (matchesAllowedPrefix(normalizedPath, normalizedAllowedRoutes)) {
+  if (
+    normalizedAllowedRoutes.some((allowed) =>
+      matchesRoutePattern(normalizedPath, allowed),
+    )
+  ) {
     return true
   }
 
-  return DERIVED_OPERATIONAL_ROUTE_RULES.some(
-    (rule) =>
-      rule.matches(normalizedPath) &&
-      rule.requiredAnyOf.some((parentRoute) =>
-        matchesAllowedPrefix(parentRoute, normalizedAllowedRoutes),
-      ),
+  return normalizedAllowedRoutes.some((allowed) =>
+    getAuthorizedChildRoutes(allowed, menuTree).some((child) =>
+      matchesRoutePattern(normalizedPath, child),
+    ),
   )
 }
 
@@ -270,9 +381,15 @@ export function useAllowedNavItems() {
     return collectAllowedMenuRoutes(misMenusQuery.data)
   }, [misMenusQuery.data])
 
+  const menuTree = useMemo(
+    () => extractMenuTreeNodes(misMenusQuery.data),
+    [misMenusQuery.data],
+  )
+
   return {
     navItems: dynamicNavSections,
     allowedRoutes,
+    menuTree,
     isLoading: misMenusQuery.isLoading,
     isFetched: misMenusQuery.isFetched,
     isError: misMenusQuery.isError,

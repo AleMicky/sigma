@@ -1,28 +1,24 @@
 import type { Rol } from "../api/rol.service"
 
+/**
+ * Únicos roles del seed V159. No se inventan alias: cualquier código fuera de
+ * este catálogo se muestra con el texto que envía la API (fallback seguro).
+ */
 const KNOWN_ROLE_LABELS: Record<string, string> = {
-  admin: "Administrador del Sistema",
-  administrador: "Administrador del Sistema",
-  role_admin: "Administrador del Sistema",
-  rol_admin: "Administrador del Sistema",
-  user: "Usuario General",
-  usuario: "Usuario General",
-  operator: "Operador de Planta",
-  operador: "Operador de Planta",
-  supervisor: "Supervisor General",
-  supervisor_mantenimiento: "Supervisor de Mantenimiento",
-  tecnico: "Técnico Especialista",
-  tecnico_mantenimiento: "Técnico de Mantenimiento",
-  encargado_mantenimiento: "Encargado de Mantenimiento",
-  aprobador: "Aprobador de Solicitudes",
-  auditor: "Auditor del Sistema",
-  inventarios: "Gestor de Inventarios",
-  "default-roles-sigma": "Roles Base del Sistema (SIGMA)",
-  offline_access: "Acceso Fuera de Línea (Offline)",
-  uma_authorization: "Autorización de Recursos (UMA)",
+  admin: "Administrador",
+  encargado_movilidades: "Encargado de Movilidades",
+  conductor: "Conductor",
+  solicitante_movilidad: "Solicitante de Movilidad",
+  encargado: "Encargado",
+  supervisor: "Supervisor",
+  solicitante: "Solicitante",
 }
 
 const MINOR_WORDS = new Set(["de", "del", "la", "el", "los", "las", "en", "y", "o", "a", "por", "para"])
+
+function normalizeRoleCode(value: string): string {
+  return value.trim().toLowerCase().replace(/^(role_|rol_)/, "")
+}
 
 /**
  * Formats any raw string into a clean, human-readable Title Case string.
@@ -53,24 +49,27 @@ export function formatTitleCase(input: string): string {
 }
 
 /**
- * Returns a friendly, beautifully formatted display name for a Rol.
+ * Returns a friendly display name only for roles known from V159; the rest
+ * keeps the API wording through a conservative Title Case fallback.
  */
 export function getFriendlyRoleName(rol: Rol | null | undefined): string {
   if (!rol) return ""
 
-  const codigoClean = (rol.codigo || "").toLowerCase().trim()
-  if (KNOWN_ROLE_LABELS[codigoClean]) {
-    return KNOWN_ROLE_LABELS[codigoClean]
+  const codigoClean = normalizeRoleCode(rol.codigo ?? "")
+  const knownByCode = KNOWN_ROLE_LABELS[codigoClean]
+  if (knownByCode) {
+    return knownByCode
   }
 
-  // Check if nombre is present and different from raw code
-  if (rol.nombre && rol.nombre.trim()) {
-    const nombreClean = rol.nombre.toLowerCase().trim()
-    if (KNOWN_ROLE_LABELS[nombreClean]) {
-      return KNOWN_ROLE_LABELS[nombreClean]
-    }
+  const nombreClean = normalizeRoleCode(rol.nombre ?? "")
+  const knownByNombre = KNOWN_ROLE_LABELS[nombreClean]
+  if (knownByNombre) {
+    return knownByNombre
+  }
+
+  if (rol.nombre?.trim()) {
     return formatTitleCase(rol.nombre)
   }
 
-  return formatTitleCase(rol.codigo)
+  return formatTitleCase(rol.codigo ?? "")
 }

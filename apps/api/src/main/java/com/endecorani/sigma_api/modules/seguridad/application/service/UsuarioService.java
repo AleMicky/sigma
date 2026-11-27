@@ -1,5 +1,6 @@
 package com.endecorani.sigma_api.modules.seguridad.application.service;
 
+import com.endecorani.sigma_api.config.security.SecurityUtils;
 import com.endecorani.sigma_api.modules.organizacion.application.dto.response.PersonaResumenResponse;
 import com.endecorani.sigma_api.modules.organizacion.domain.model.Persona;
 import com.endecorani.sigma_api.modules.organizacion.domain.repository.PersonaRepository;
@@ -44,6 +45,7 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final UsuarioRolJpaRepository usuarioRolJpaRepository;
     private final PersonaRepository personaRepository;
+    private final SecurityUtils securityUtils;
 
     @Transactional(readOnly = true)
     public PageResponse<UsuarioResponse> findAll(PageRequestDto pageRequest) {
@@ -95,6 +97,10 @@ public class UsuarioService {
 
         usuario.asignarPersona(personaId);
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
+        // REQ-SEG-009: la resolución de usuario en auditoría está cacheada; la persona
+        // asociada cambia y la entrada debe refrescarse antes de la siguiente petición.
+        securityUtils.invalidateUser(
+                usuarioGuardado.getKeycloakUserId(), usuarioGuardado.getUsername());
         return toResponse(usuarioGuardado);
     }
 

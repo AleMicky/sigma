@@ -47,7 +47,8 @@ public class EmpleadoService implements CrudService<EmpleadoRequest, EmpleadoRes
     private static final int CODIGO_MIN_LENGTH = 2;
     private static final int CODIGO_MAX_LENGTH = 50;
 
-    private static final String ROL_ADMIN = "ADMIN";
+    // REQ-SEG-114: authority canónica; "ADMIN" sin prefijo no es una authority de Spring.
+    private static final String ROL_ADMIN = "ROLE_ADMIN";
 
     private static final Set<String> SORT_FIELDS = Set.of(
             "id",
@@ -184,8 +185,7 @@ public class EmpleadoService implements CrudService<EmpleadoRequest, EmpleadoRes
 
         return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .anyMatch(authority -> authority.equalsIgnoreCase(ROL_ADMIN)
-                        || authority.equalsIgnoreCase("ROLE_" + ROL_ADMIN));
+                .anyMatch(ROL_ADMIN::equals);
     }
 
     // =========================================================================
