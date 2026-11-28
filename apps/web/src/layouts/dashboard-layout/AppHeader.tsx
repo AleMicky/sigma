@@ -77,8 +77,11 @@ export function AppHeader() {
   // de los errores de React Query (sin conexión o errores 5xx).
   useEffect(() => {
     const queryCache = queryClient.getQueryCache()
+    let active = true
+    let scheduled = false
 
     function syncConnectionState() {
+      if (!active) return
       const unavailable = queryCache
         .findAll()
         .filter((query) => query.state.status === "error")
@@ -92,8 +95,32 @@ export function AppHeader() {
       setHasServerError(unavailable)
     }
 
+    // Diferir al microtask para evitar actualizar AppHeader mientras otro
+    // componente está en fase de render (p. ej. al montar un useQuery nuevo).
+    function scheduleSync() {
+      if (scheduled || !active) return
+      scheduled = true
+      queueMicrotask(() => {
+        scheduled = false
+        syncConnectionState()
+      })
+    }
+
     syncConnectionState()
-    return queryCache.subscribe(syncConnectionState)
+    const unsubscribe = queryCache.subscribe((event) => {
+      if (
+        event.type === "updated" ||
+        event.type === "removed" ||
+        event.type === "added"
+      ) {
+        scheduleSync()
+      }
+    })
+
+    return () => {
+      active = false
+      unsubscribe()
+    }
   }, [queryClient])
 
   // Sincronizar el estado con el API de pantalla completa (también si se sale con Esc/F11)

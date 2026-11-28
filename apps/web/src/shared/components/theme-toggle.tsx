@@ -1,6 +1,7 @@
 import { Monitor, Moon, Sun } from "lucide-react"
-import { useTheme } from "next-themes"
 import { useSyncExternalStore } from "react"
+
+import { useTheme } from "@/app/providers/theme-context"
 
 import { Button } from "@/shared/components/ui/button"
 import {

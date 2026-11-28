@@ -1,6 +1,6 @@
 import { ChevronsUpDown, LogOut, Monitor, Moon, Sun, UserRound } from "lucide-react"
 import { useNavigate } from "@tanstack/react-router"
-import { useTheme } from "next-themes"
+import { useTheme } from "@/app/providers/theme-context"
 
 import { routes } from "@/app/config"
 import { useAuthStore } from "@/app/store/auth.store"

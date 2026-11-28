@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
-import { useTheme } from "next-themes"
+import { useTheme } from "@/app/providers/theme-context"
 import {
   Compass,
   Folder,
