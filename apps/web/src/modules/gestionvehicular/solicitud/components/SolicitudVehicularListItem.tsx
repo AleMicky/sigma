@@ -34,6 +34,8 @@ import { cn } from "@/shared/lib/utils"
 
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
+import type { AsignacionCuestionario } from "@/modules/cuestionarios/api/cuestionario.types"
+import { CuestionarioEntidadAction } from "@/modules/cuestionarios/components/CuestionarioEntidadAction"
 import { conductorQueries } from "../../conductor/api/conductor.queries"
 import { asignacionVehicularQueries } from "../../asignacion-vehicular/api/asignacion-vehicular.queries"
 import { controlActivoVehicularQueries } from "../../control-activo/api/control-activo.queries"
@@ -112,6 +114,8 @@ export type SolicitudVehicularListItemProps = {
   ) => void
   onlyWorkflowActionsOnBorrador?: boolean
   showWorkflowActions?: boolean
+  cuestionarioAsignacion?: AsignacionCuestionario | null
+  onCuestionarioResponded?: () => void
   className?: string
 }
 
@@ -127,9 +131,12 @@ export function SolicitudVehicularListItem({
   onActionSelect,
   onlyWorkflowActionsOnBorrador = false,
   showWorkflowActions = true,
+  cuestionarioAsignacion,
+  onCuestionarioResponded,
   className,
 }: Readonly<SolicitudVehicularListItemProps>) {
   const estadoNorm = (solicitud.estado ?? "").trim().toLowerCase()
+  const isFinalizada = estadoNorm === "finalizada"
   const isBorrador = estadoNorm === "borrador" || estadoNorm === "pendiente"
   const isObservado = estadoNorm === "observado"
   const isRetorno =
@@ -270,6 +277,13 @@ export function SolicitudVehicularListItem({
 
         {/* Acciones Rápidas Superior */}
         <div className="flex items-center gap-1 flex-wrap justify-end">
+          {isFinalizada && cuestionarioAsignacion && (
+            <CuestionarioEntidadAction
+              asignacion={cuestionarioAsignacion}
+              compact
+              onResponded={onCuestionarioResponded}
+            />
+          )}
 
           {onTraceability && (
             <Button

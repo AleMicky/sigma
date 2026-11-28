@@ -81,6 +81,11 @@ describe("isFormOrTransientPath", () => {
     expect(isFormOrTransientPath("/activos/registro-activo/editar")).toBe(true)
     expect(
       isFormOrTransientPath(
+        "/cuestionarios/123e4567-e89b-12d3-a456-426614174000/constructor",
+      ),
+    ).toBe(true)
+    expect(
+      isFormOrTransientPath(
         "/activos/registro-activo/123e4567-e89b-12d3-a456-426614174000",
       ),
     ).toBe(true)

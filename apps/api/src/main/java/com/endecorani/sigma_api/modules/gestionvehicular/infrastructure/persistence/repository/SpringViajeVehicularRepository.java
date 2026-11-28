@@ -63,20 +63,20 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
         LEFT JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.SolicitudVehicularEntity s ON a.solicitudVehicularId = s.id
         LEFT JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorEntity c ON a.conductorId = c.id
         LEFT JOIN com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity act ON a.activoId = act.id
-        WHERE (:search IS NULL
-            OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(s.destino) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR (act.codigoAlternativo IS NOT NULL AND LOWER(act.codigoAlternativo) LIKE LOWER(CONCAT('%', :search, '%')))
-            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
+        WHERE (CAST(:search AS String) IS NULL
+            OR LOWER(s.numero) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+            OR LOWER(s.destino) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+            OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+            OR (act.codigoAlternativo IS NOT NULL AND LOWER(act.codigoAlternativo) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')))
+            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
             OR EXISTS (
                 SELECT 1
                 FROM com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorLicenciaEntity l
                 WHERE l.conductorId = a.conductorId
-                  AND LOWER(l.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
+                  AND LOWER(l.numeroLicencia) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
             )
-            OR LOWER(COALESCE(v.observacion, '')) LIKE LOWER(CONCAT('%', :search, '%')))
+            OR LOWER(COALESCE(v.observacion, '')) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')))
           AND (:asignacionVehicularId IS NULL OR v.asignacionVehicularId = :asignacionVehicularId)
           AND (:solicitudVehicularId IS NULL OR a.solicitudVehicularId = :solicitudVehicularId)
           AND (:activoId IS NULL OR a.activoId = :activoId)
@@ -113,20 +113,20 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
         LEFT JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.SolicitudVehicularEntity s ON a.solicitudVehicularId = s.id
         LEFT JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorEntity c ON a.conductorId = c.id
         LEFT JOIN com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity act ON a.activoId = act.id
-        WHERE (:search IS NULL
-            OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(s.destino) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR (act.codigoAlternativo IS NOT NULL AND LOWER(act.codigoAlternativo) LIKE LOWER(CONCAT('%', :search, '%')))
-            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
+        WHERE (CAST(:search AS String) IS NULL
+            OR LOWER(s.numero) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+            OR LOWER(s.destino) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+            OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+            OR (act.codigoAlternativo IS NOT NULL AND LOWER(act.codigoAlternativo) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')))
+            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
             OR EXISTS (
                 SELECT 1 
                 FROM com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorLicenciaEntity l
                 WHERE l.conductorId = a.conductorId
-                  AND LOWER(l.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
+                  AND LOWER(l.numeroLicencia) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
             )
-            OR LOWER(COALESCE(v.observacion, '')) LIKE LOWER(CONCAT('%', :search, '%')))
+            OR LOWER(COALESCE(v.observacion, '')) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')))
           AND (:asignacionVehicularId IS NULL OR v.asignacionVehicularId = :asignacionVehicularId)
           AND (:solicitudVehicularId IS NULL OR a.solicitudVehicularId = :solicitudVehicularId)
           AND (:activoId IS NULL OR a.activoId = :activoId)
@@ -154,20 +154,20 @@ public interface SpringViajeVehicularRepository extends JpaRepository<ViajeVehic
         LEFT JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.SolicitudVehicularEntity s ON a.solicitudVehicularId = s.id
         LEFT JOIN com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorEntity c ON a.conductorId = c.id
         LEFT JOIN com.endecorani.sigma_api.modules.activos.infrastructure.persistence.entity.ActivoEntity act ON a.activoId = act.id
-        WHERE (:search IS NULL
-            OR LOWER(s.numero) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(s.destino) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR (act.codigoAlternativo IS NOT NULL AND LOWER(act.codigoAlternativo) LIKE LOWER(CONCAT('%', :search, '%')))
-            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', :search, '%'))
+        WHERE (CAST(:search AS String) IS NULL
+            OR LOWER(s.numero) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+            OR LOWER(s.destino) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+            OR LOWER(s.motivo) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+            OR LOWER(act.codigo) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+            OR (act.codigoAlternativo IS NOT NULL AND LOWER(act.codigoAlternativo) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')))
+            OR LOWER(act.nombre) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
             OR EXISTS (
                 SELECT 1 
                 FROM com.endecorani.sigma_api.modules.gestionvehicular.infrastructure.persistence.entity.ConductorLicenciaEntity l
                 WHERE l.conductorId = a.conductorId
-                  AND LOWER(l.numeroLicencia) LIKE LOWER(CONCAT('%', :search, '%'))
+                  AND LOWER(l.numeroLicencia) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
             )
-            OR LOWER(COALESCE(v.observacion, '')) LIKE LOWER(CONCAT('%', :search, '%')))
+            OR LOWER(COALESCE(v.observacion, '')) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')))
           AND (:asignacionVehicularId IS NULL OR v.asignacionVehicularId = :asignacionVehicularId)
           AND (:solicitudVehicularId IS NULL OR a.solicitudVehicularId = :solicitudVehicularId)
           AND (:activoId IS NULL OR a.activoId = :activoId)

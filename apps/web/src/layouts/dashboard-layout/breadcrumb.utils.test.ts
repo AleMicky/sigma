@@ -7,6 +7,10 @@ describe("formatSegment", () => {
     expect(formatSegment("activos")).toBe("Activos")
     expect(formatSegment("ordenes-trabajo")).toBe("Órdenes de Trabajo")
     expect(formatSegment("gestion-vehicular")).toBe("Gestión Vehicular")
+    expect(formatSegment("cuestionarios")).toBe("Cuestionarios")
+    expect(formatSegment("mis-pendientes")).toBe("Mis Evaluaciones")
+    expect(formatSegment("resultados")).toBe("Resultados y Reportes")
+    expect(formatSegment("constructor")).toBe("Constructor de Preguntas")
   })
 
   it("muestra 'Detalle' para IDs numéricos y UUID", () => {

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
-import { AlertCircle, FileText, Plus, RefreshCw } from "lucide-react"
+import { AlertCircle, FileText, Plus, RefreshCw, Star } from "lucide-react"
 
 import { appConfig } from "@/app/config"
 import { routes } from "@/app/config/routes"
@@ -21,6 +21,9 @@ import {
 import { useClampPage, usePaginatedSearch } from "@/shared/hooks/use-paginated-search"
 import { cn } from "@/shared/lib/utils"
 
+import { cuestionarioQueries } from "@/modules/cuestionarios/api/cuestionario.queries"
+import type { AsignacionCuestionario } from "@/modules/cuestionarios/api/cuestionario.types"
+import { ENTIDAD_TIPO_SOLICITUD_VEHICULAR } from "@/modules/cuestionarios/lib/cuestionario.utils"
 import { tipoSolicitudVehicularQueries } from "@/modules/gestionvehicular/tipo-solicitud/api/tipo-solicitud.queries"
 import {
   useCompletarWorkflowSolicitudVehicular,
@@ -156,6 +159,50 @@ export function SolicitudesVehicularesPage() {
     () => query.data?.content ?? [],
     [query.data?.content]
   )
+
+  const finalizadasIds = useMemo(
+    () =>
+      solicitudes
+        .filter((s) => (s.estado ?? "").trim().toUpperCase() === "FINALIZADA")
+        .map((s) => s.id),
+    [solicitudes]
+  )
+
+  const asignacionesLoteQuery = useQuery({
+    ...cuestionarioQueries.misAsignacionesLote(
+      ENTIDAD_TIPO_SOLICITUD_VEHICULAR,
+      finalizadasIds
+    ),
+    enabled: finalizadasIds.length > 0,
+    staleTime: 1000 * 60 * 2,
+  })
+
+  const misPendientesVehicularesQuery = useQuery({
+    ...cuestionarioQueries.misPendientes({
+      page: 0,
+      size: 1,
+      estado: "PENDIENTE",
+      entidadTipo: ENTIDAD_TIPO_SOLICITUD_VEHICULAR,
+    }),
+    staleTime: 1000 * 60 * 2,
+  })
+
+  const asignacionesBySolicitudId = useMemo(() => {
+    const map = new Map<string, AsignacionCuestionario>()
+    for (const item of asignacionesLoteQuery.data ?? []) {
+      map.set(item.entidadId, item)
+    }
+    return map
+  }, [asignacionesLoteQuery.data])
+
+  const totalPendientesEvaluacion = useMemo(() => {
+    const enPagina = (asignacionesLoteQuery.data ?? []).filter(
+      (item) => item.estado === "PENDIENTE"
+    ).length
+    const enServidor = misPendientesVehicularesQuery.data?.totalElements ?? 0
+    return Math.max(enPagina, enServidor)
+  }, [asignacionesLoteQuery.data, misPendientesVehicularesQuery.data?.totalElements])
+
   const resumen = resumenQuery.data
   const totalCount = resumen?.total
 
@@ -204,14 +251,34 @@ export function SolicitudesVehicularesPage() {
     return map[selectedEstado] ?? selectedEstado.replace(/_/g, " ")
   }, [selectedEstado])
 
+  const handleCuestionarioResponded = useCallback(() => {
+    if (finalizadasIds.length > 0) {
+      void asignacionesLoteQuery.refetch()
+    }
+    void misPendientesVehicularesQuery.refetch()
+  }, [finalizadasIds.length, asignacionesLoteQuery, misPendientesVehicularesQuery])
+
   const handleRefresh = useCallback(() => {
     query.refetch()
     resumenQuery.refetch()
     tiposQuery.refetch()
+    if (finalizadasIds.length > 0) {
+      void asignacionesLoteQuery.refetch()
+    }
+    void misPendientesVehicularesQuery.refetch()
     if (selectedDetailId) {
       detailQuery.refetch()
     }
-  }, [query, resumenQuery, tiposQuery, detailQuery, selectedDetailId])
+  }, [
+    query,
+    resumenQuery,
+    tiposQuery,
+    finalizadasIds.length,
+    asignacionesLoteQuery,
+    misPendientesVehicularesQuery,
+    detailQuery,
+    selectedDetailId,
+  ])
 
   const handleActionSelect = useCallback(
     (
@@ -292,6 +359,37 @@ export function SolicitudesVehicularesPage() {
         filteredCount={query.data?.totalElements}
         onClearAll={handleClearAllFilters}
       />
+
+      {/* Aviso discreto de evaluaciones pendientes de viajes finalizados */}
+      {totalPendientesEvaluacion > 0 && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-warning/35 bg-warning/10 px-3.5 py-2 text-xs text-foreground"
+        >
+          <div className="flex items-center gap-2">
+            <Star className="size-4 shrink-0 text-warning" />
+            <span>
+              Tienes{" "}
+              <strong className="font-semibold tabular-nums">
+                {totalPendientesEvaluacion}
+              </strong>{" "}
+              {totalPendientesEvaluacion === 1
+                ? "evaluación pendiente de un viaje finalizado."
+                : "evaluaciones pendientes de viajes finalizados."}
+            </span>
+          </div>
+          <Link to={routes.cuestionarios.misPendientes}>
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              className="h-7 gap-1 rounded-lg border-warning/40 bg-background/80 text-xs font-semibold text-warning hover:bg-warning/15 hover:text-warning"
+            >
+              Ver mis evaluaciones
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Listado y Estados UX */}
       <div className="relative flex flex-col space-y-2.5">
@@ -388,6 +486,10 @@ export function SolicitudesVehicularesPage() {
                   onDelete={setDeletingItem}
                   onActionSelect={handleActionSelect}
                   onTraceability={setHistoryItem}
+                  cuestionarioAsignacion={asignacionesBySolicitudId.get(
+                    solicitud.id
+                  )}
+                  onCuestionarioResponded={handleCuestionarioResponded}
                 />
               ))}
             </div>
@@ -415,6 +517,12 @@ export function SolicitudesVehicularesPage() {
         onDelete={setDeletingItem}
         onViewHistory={setHistoryItem}
         onActionSelect={handleActionSelect}
+        cuestionarioAsignacion={
+          activeDetailItem
+            ? asignacionesBySolicitudId.get(activeDetailItem.id)
+            : undefined
+        }
+        onCuestionarioResponded={handleCuestionarioResponded}
       />
 
       {/* Diálogo para completar acciones de workflow de forma interactiva */}

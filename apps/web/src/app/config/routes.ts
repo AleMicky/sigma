@@ -112,6 +112,14 @@ export const routes = {
     menus: "/seguridad/menus",
   },
 
+  cuestionarios: {
+    root: "/cuestionarios",
+    constructor: (cuestionarioId: string) =>
+      `/cuestionarios/${cuestionarioId}/constructor`,
+    misPendientes: "/cuestionarios/mis-pendientes",
+    resultados: "/cuestionarios/resultados",
+  },
+
   gestionVehicular: {
     root: "/gestion-vehicular",
     dashboard: "/gestion-vehicular/dashboard-gestion-vehicular",

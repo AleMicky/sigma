@@ -82,6 +82,7 @@ describe("isRouteAuthorized (REQ-SEG-102)", () => {
     ],
     ["/activos/catalogo/activo-1", ["/activos/catalogo"], true],
     ["/activos/catalogo/activo-1", ["/activos/disponibilidad"], false],
+    ["/cuestionarios/cuest-1/constructor", ["/cuestionarios"], true],
     ["/seguridad/usuarios", ["/gestion-vehicular/mis-viajes"], false],
     ["/", [], true],
     ["/perfil", [], true],

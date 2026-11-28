@@ -86,6 +86,9 @@ export const PATH_TITLES: Record<string, string> = {
   "/seguridad/roles": "Roles",
   "/seguridad/menus": "Menús",
   "/seguridad/permisos": "Permisos",
+  "/cuestionarios": "Parametrización",
+  "/cuestionarios/mis-pendientes": "Mis Evaluaciones",
+  "/cuestionarios/resultados": "Resultados y Reportes",
   "/perfil": "Mi Perfil",
 }
 
@@ -157,6 +160,7 @@ export function isFormOrTransientPath(pathname: string): boolean {
     // ya se detectan por "nuevo" / "editar" (REQ-BIZ-024).
     "wizard",
     "asistente",
+    "constructor",
   ]
 
   // Verifica si algún segmento coincide con una palabra clave de formulario

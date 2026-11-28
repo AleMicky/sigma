@@ -13,6 +13,7 @@ import { Route as DashboardRouteImport } from './../../routes/_dashboard'
 import { Route as LoginRouteImport } from './../../routes/login'
 import { Route as DashboardIndexRouteImport } from './../../routes/_dashboard/index'
 import { Route as DashboardActivosRouteRouteImport } from './../../routes/_dashboard/activos/route'
+import { Route as DashboardCuestionariosRouteRouteImport } from './../../routes/_dashboard/cuestionarios/route'
 import { Route as DashboardGestionVehicularRouteRouteImport } from './../../routes/_dashboard/gestion-vehicular/route'
 import { Route as DashboardInventariosRouteRouteImport } from './../../routes/_dashboard/inventarios/route'
 import { Route as DashboardMantenimientosRouteRouteImport } from './../../routes/_dashboard/mantenimientos/route'
@@ -21,6 +22,9 @@ import { Route as DashboardParametrosRouteRouteImport } from './../../routes/_da
 import { Route as DashboardPerfilRouteImport } from './../../routes/_dashboard/perfil'
 import { Route as DashboardSeguridadRouteRouteImport } from './../../routes/_dashboard/seguridad/route'
 import { Route as DashboardActivosIndexRouteImport } from './../../routes/_dashboard/activos/index'
+import { Route as DashboardCuestionariosIndexRouteImport } from './../../routes/_dashboard/cuestionarios/index'
+import { Route as DashboardCuestionariosMisPendientesRouteImport } from './../../routes/_dashboard/cuestionarios/mis-pendientes'
+import { Route as DashboardCuestionariosResultadosRouteImport } from './../../routes/_dashboard/cuestionarios/resultados'
 import { Route as DashboardGestionVehicularIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/index'
 import { Route as DashboardInventariosIndexRouteImport } from './../../routes/_dashboard/inventarios/index'
 import { Route as DashboardInventariosCategoriasRouteRouteImport } from './../../routes/_dashboard/inventarios/categorias/route'
@@ -52,6 +56,7 @@ import { Route as DashboardActivosIncidentesIndexRouteImport } from './../../rou
 import { Route as DashboardActivosIncidentesIdRouteImport } from './../../routes/_dashboard/activos/incidentes/$id'
 import { Route as DashboardActivosRegistroActivoIndexRouteImport } from './../../routes/_dashboard/activos/registro-activo/index'
 import { Route as DashboardActivosRegistroActivoNuevoRouteImport } from './../../routes/_dashboard/activos/registro-activo/nuevo'
+import { Route as DashboardCuestionariosCuestionarioIdConstructorRouteImport } from './../../routes/_dashboard/cuestionarios/$cuestionarioId.constructor'
 import { Route as DashboardGestionVehicularAsignacionesIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/asignaciones/index'
 import { Route as DashboardGestionVehicularCalendarioReservasIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/calendario-reservas/index'
 import { Route as DashboardGestionVehicularConfiguracionesIndexRouteImport } from './../../routes/_dashboard/gestion-vehicular/configuraciones/index'
@@ -136,6 +141,12 @@ const DashboardActivosRouteRoute = DashboardActivosRouteRouteImport.update({
   path: '/activos',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardCuestionariosRouteRoute =
+  DashboardCuestionariosRouteRouteImport.update({
+    id: '/cuestionarios',
+    path: '/cuestionarios',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardGestionVehicularRouteRoute =
   DashboardGestionVehicularRouteRouteImport.update({
     id: '/gestion-vehicular',
@@ -181,6 +192,24 @@ const DashboardActivosIndexRoute = DashboardActivosIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardActivosRouteRoute,
 } as any)
+const DashboardCuestionariosIndexRoute =
+  DashboardCuestionariosIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardCuestionariosRouteRoute,
+  } as any)
+const DashboardCuestionariosMisPendientesRoute =
+  DashboardCuestionariosMisPendientesRouteImport.update({
+    id: '/mis-pendientes',
+    path: '/mis-pendientes',
+    getParentRoute: () => DashboardCuestionariosRouteRoute,
+  } as any)
+const DashboardCuestionariosResultadosRoute =
+  DashboardCuestionariosResultadosRouteImport.update({
+    id: '/resultados',
+    path: '/resultados',
+    getParentRoute: () => DashboardCuestionariosRouteRoute,
+  } as any)
 const DashboardGestionVehicularIndexRoute =
   DashboardGestionVehicularIndexRouteImport.update({
     id: '/',
@@ -365,6 +394,12 @@ const DashboardActivosRegistroActivoNuevoRoute =
     id: '/registro-activo/nuevo',
     path: '/registro-activo/nuevo',
     getParentRoute: () => DashboardActivosRouteRoute,
+  } as any)
+const DashboardCuestionariosCuestionarioIdConstructorRoute =
+  DashboardCuestionariosCuestionarioIdConstructorRouteImport.update({
+    id: '/$cuestionarioId/constructor',
+    path: '/$cuestionarioId/constructor',
+    getParentRoute: () => DashboardCuestionariosRouteRoute,
   } as any)
 const DashboardGestionVehicularAsignacionesIndexRoute =
   DashboardGestionVehicularAsignacionesIndexRouteImport.update({
@@ -760,6 +795,7 @@ export interface FileRoutesByFullPath {
   '/': typeof DashboardIndexRoute
   '/login': typeof LoginRoute
   '/activos': typeof DashboardActivosRouteRouteWithChildren
+  '/cuestionarios': typeof DashboardCuestionariosRouteRouteWithChildren
   '/gestion-vehicular': typeof DashboardGestionVehicularRouteRouteWithChildren
   '/inventarios': typeof DashboardInventariosRouteRouteWithChildren
   '/mantenimientos': typeof DashboardMantenimientosRouteRouteWithChildren
@@ -778,6 +814,8 @@ export interface FileRoutesByFullPath {
   '/mantenimientos/programaciones-mantenimiento': typeof DashboardMantenimientosProgramacionesMantenimientoRouteRouteWithChildren
   '/mantenimientos/solicitudes': typeof DashboardMantenimientosSolicitudesRouteRouteWithChildren
   '/mantenimientos/tipos-mantenimiento': typeof DashboardMantenimientosTiposMantenimientoRouteRouteWithChildren
+  '/cuestionarios/mis-pendientes': typeof DashboardCuestionariosMisPendientesRoute
+  '/cuestionarios/resultados': typeof DashboardCuestionariosResultadosRoute
   '/inventarios/nuevo': typeof DashboardInventariosNuevoRoute
   '/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
   '/parametros/gestion': typeof DashboardParametrosGestionRoute
@@ -785,6 +823,7 @@ export interface FileRoutesByFullPath {
   '/parametros/ubicaciones': typeof DashboardParametrosUbicacionesRoute
   '/parametros/unidades-medida': typeof DashboardParametrosUnidadesMedidaRoute
   '/activos/': typeof DashboardActivosIndexRoute
+  '/cuestionarios/': typeof DashboardCuestionariosIndexRoute
   '/gestion-vehicular/': typeof DashboardGestionVehicularIndexRoute
   '/inventarios/': typeof DashboardInventariosIndexRoute
   '/mantenimientos/': typeof DashboardMantenimientosIndexRoute
@@ -794,6 +833,7 @@ export interface FileRoutesByFullPath {
   '/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/activos/incidentes/$id': typeof DashboardActivosIncidentesIdRoute
   '/activos/registro-activo/nuevo': typeof DashboardActivosRegistroActivoNuevoRoute
+  '/cuestionarios/$cuestionarioId/constructor': typeof DashboardCuestionariosCuestionarioIdConstructorRoute
   '/gestion-vehicular/controles-activos/nuevo': typeof DashboardGestionVehicularControlesActivosNuevoRoute
   '/gestion-vehicular/salidas/$salidaId': typeof DashboardGestionVehicularSalidasSalidaIdRoute
   '/gestion-vehicular/solicitudes/nueva': typeof DashboardGestionVehicularSolicitudesNuevaRoute
@@ -869,6 +909,8 @@ export interface FileRoutesByTo {
   '/parametros': typeof DashboardParametrosRouteRouteWithChildren
   '/perfil': typeof DashboardPerfilRoute
   '/': typeof DashboardIndexRoute
+  '/cuestionarios/mis-pendientes': typeof DashboardCuestionariosMisPendientesRoute
+  '/cuestionarios/resultados': typeof DashboardCuestionariosResultadosRoute
   '/inventarios/nuevo': typeof DashboardInventariosNuevoRoute
   '/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
   '/parametros/gestion': typeof DashboardParametrosGestionRoute
@@ -876,6 +918,7 @@ export interface FileRoutesByTo {
   '/parametros/ubicaciones': typeof DashboardParametrosUbicacionesRoute
   '/parametros/unidades-medida': typeof DashboardParametrosUnidadesMedidaRoute
   '/activos': typeof DashboardActivosIndexRoute
+  '/cuestionarios': typeof DashboardCuestionariosIndexRoute
   '/gestion-vehicular': typeof DashboardGestionVehicularIndexRoute
   '/inventarios': typeof DashboardInventariosIndexRoute
   '/mantenimientos': typeof DashboardMantenimientosIndexRoute
@@ -884,6 +927,7 @@ export interface FileRoutesByTo {
   '/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/activos/incidentes/$id': typeof DashboardActivosIncidentesIdRoute
   '/activos/registro-activo/nuevo': typeof DashboardActivosRegistroActivoNuevoRoute
+  '/cuestionarios/$cuestionarioId/constructor': typeof DashboardCuestionariosCuestionarioIdConstructorRoute
   '/gestion-vehicular/controles-activos/nuevo': typeof DashboardGestionVehicularControlesActivosNuevoRoute
   '/gestion-vehicular/salidas/$salidaId': typeof DashboardGestionVehicularSalidasSalidaIdRoute
   '/gestion-vehicular/solicitudes/nueva': typeof DashboardGestionVehicularSolicitudesNuevaRoute
@@ -959,6 +1003,7 @@ export interface FileRoutesById {
   '/_dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/_dashboard/activos': typeof DashboardActivosRouteRouteWithChildren
+  '/_dashboard/cuestionarios': typeof DashboardCuestionariosRouteRouteWithChildren
   '/_dashboard/gestion-vehicular': typeof DashboardGestionVehicularRouteRouteWithChildren
   '/_dashboard/inventarios': typeof DashboardInventariosRouteRouteWithChildren
   '/_dashboard/mantenimientos': typeof DashboardMantenimientosRouteRouteWithChildren
@@ -978,6 +1023,8 @@ export interface FileRoutesById {
   '/_dashboard/mantenimientos/programaciones-mantenimiento': typeof DashboardMantenimientosProgramacionesMantenimientoRouteRouteWithChildren
   '/_dashboard/mantenimientos/solicitudes': typeof DashboardMantenimientosSolicitudesRouteRouteWithChildren
   '/_dashboard/mantenimientos/tipos-mantenimiento': typeof DashboardMantenimientosTiposMantenimientoRouteRouteWithChildren
+  '/_dashboard/cuestionarios/mis-pendientes': typeof DashboardCuestionariosMisPendientesRoute
+  '/_dashboard/cuestionarios/resultados': typeof DashboardCuestionariosResultadosRoute
   '/_dashboard/inventarios/nuevo': typeof DashboardInventariosNuevoRoute
   '/_dashboard/parametros/catalogos': typeof DashboardParametrosCatalogosRoute
   '/_dashboard/parametros/gestion': typeof DashboardParametrosGestionRoute
@@ -985,6 +1032,7 @@ export interface FileRoutesById {
   '/_dashboard/parametros/ubicaciones': typeof DashboardParametrosUbicacionesRoute
   '/_dashboard/parametros/unidades-medida': typeof DashboardParametrosUnidadesMedidaRoute
   '/_dashboard/activos/': typeof DashboardActivosIndexRoute
+  '/_dashboard/cuestionarios/': typeof DashboardCuestionariosIndexRoute
   '/_dashboard/gestion-vehicular/': typeof DashboardGestionVehicularIndexRoute
   '/_dashboard/inventarios/': typeof DashboardInventariosIndexRoute
   '/_dashboard/mantenimientos/': typeof DashboardMantenimientosIndexRoute
@@ -994,6 +1042,7 @@ export interface FileRoutesById {
   '/_dashboard/activos/catalogo/$activoId': typeof DashboardActivosCatalogoActivoIdRoute
   '/_dashboard/activos/incidentes/$id': typeof DashboardActivosIncidentesIdRoute
   '/_dashboard/activos/registro-activo/nuevo': typeof DashboardActivosRegistroActivoNuevoRoute
+  '/_dashboard/cuestionarios/$cuestionarioId/constructor': typeof DashboardCuestionariosCuestionarioIdConstructorRoute
   '/_dashboard/gestion-vehicular/controles-activos/nuevo': typeof DashboardGestionVehicularControlesActivosNuevoRoute
   '/_dashboard/gestion-vehicular/salidas/$salidaId': typeof DashboardGestionVehicularSalidasSalidaIdRoute
   '/_dashboard/gestion-vehicular/solicitudes/nueva': typeof DashboardGestionVehicularSolicitudesNuevaRoute
@@ -1070,6 +1119,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/activos'
+    | '/cuestionarios'
     | '/gestion-vehicular'
     | '/inventarios'
     | '/mantenimientos'
@@ -1088,6 +1138,8 @@ export interface FileRouteTypes {
     | '/mantenimientos/programaciones-mantenimiento'
     | '/mantenimientos/solicitudes'
     | '/mantenimientos/tipos-mantenimiento'
+    | '/cuestionarios/mis-pendientes'
+    | '/cuestionarios/resultados'
     | '/inventarios/nuevo'
     | '/parametros/catalogos'
     | '/parametros/gestion'
@@ -1095,6 +1147,7 @@ export interface FileRouteTypes {
     | '/parametros/ubicaciones'
     | '/parametros/unidades-medida'
     | '/activos/'
+    | '/cuestionarios/'
     | '/gestion-vehicular/'
     | '/inventarios/'
     | '/mantenimientos/'
@@ -1104,6 +1157,7 @@ export interface FileRouteTypes {
     | '/activos/catalogo/$activoId'
     | '/activos/incidentes/$id'
     | '/activos/registro-activo/nuevo'
+    | '/cuestionarios/$cuestionarioId/constructor'
     | '/gestion-vehicular/controles-activos/nuevo'
     | '/gestion-vehicular/salidas/$salidaId'
     | '/gestion-vehicular/solicitudes/nueva'
@@ -1179,6 +1233,8 @@ export interface FileRouteTypes {
     | '/parametros'
     | '/perfil'
     | '/'
+    | '/cuestionarios/mis-pendientes'
+    | '/cuestionarios/resultados'
     | '/inventarios/nuevo'
     | '/parametros/catalogos'
     | '/parametros/gestion'
@@ -1186,6 +1242,7 @@ export interface FileRouteTypes {
     | '/parametros/ubicaciones'
     | '/parametros/unidades-medida'
     | '/activos'
+    | '/cuestionarios'
     | '/gestion-vehicular'
     | '/inventarios'
     | '/mantenimientos'
@@ -1194,6 +1251,7 @@ export interface FileRouteTypes {
     | '/activos/catalogo/$activoId'
     | '/activos/incidentes/$id'
     | '/activos/registro-activo/nuevo'
+    | '/cuestionarios/$cuestionarioId/constructor'
     | '/gestion-vehicular/controles-activos/nuevo'
     | '/gestion-vehicular/salidas/$salidaId'
     | '/gestion-vehicular/solicitudes/nueva'
@@ -1268,6 +1326,7 @@ export interface FileRouteTypes {
     | '/_dashboard'
     | '/login'
     | '/_dashboard/activos'
+    | '/_dashboard/cuestionarios'
     | '/_dashboard/gestion-vehicular'
     | '/_dashboard/inventarios'
     | '/_dashboard/mantenimientos'
@@ -1287,6 +1346,8 @@ export interface FileRouteTypes {
     | '/_dashboard/mantenimientos/programaciones-mantenimiento'
     | '/_dashboard/mantenimientos/solicitudes'
     | '/_dashboard/mantenimientos/tipos-mantenimiento'
+    | '/_dashboard/cuestionarios/mis-pendientes'
+    | '/_dashboard/cuestionarios/resultados'
     | '/_dashboard/inventarios/nuevo'
     | '/_dashboard/parametros/catalogos'
     | '/_dashboard/parametros/gestion'
@@ -1294,6 +1355,7 @@ export interface FileRouteTypes {
     | '/_dashboard/parametros/ubicaciones'
     | '/_dashboard/parametros/unidades-medida'
     | '/_dashboard/activos/'
+    | '/_dashboard/cuestionarios/'
     | '/_dashboard/gestion-vehicular/'
     | '/_dashboard/inventarios/'
     | '/_dashboard/mantenimientos/'
@@ -1303,6 +1365,7 @@ export interface FileRouteTypes {
     | '/_dashboard/activos/catalogo/$activoId'
     | '/_dashboard/activos/incidentes/$id'
     | '/_dashboard/activos/registro-activo/nuevo'
+    | '/_dashboard/cuestionarios/$cuestionarioId/constructor'
     | '/_dashboard/gestion-vehicular/controles-activos/nuevo'
     | '/_dashboard/gestion-vehicular/salidas/$salidaId'
     | '/_dashboard/gestion-vehicular/solicitudes/nueva'
@@ -1409,6 +1472,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardActivosRouteRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/_dashboard/cuestionarios': {
+      id: '/_dashboard/cuestionarios'
+      path: '/cuestionarios'
+      fullPath: '/cuestionarios'
+      preLoaderRoute: typeof DashboardCuestionariosRouteRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/_dashboard/gestion-vehicular': {
       id: '/_dashboard/gestion-vehicular'
       path: '/gestion-vehicular'
@@ -1464,6 +1534,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/activos/'
       preLoaderRoute: typeof DashboardActivosIndexRouteImport
       parentRoute: typeof DashboardActivosRouteRoute
+    }
+    '/_dashboard/cuestionarios/': {
+      id: '/_dashboard/cuestionarios/'
+      path: '/'
+      fullPath: '/cuestionarios/'
+      preLoaderRoute: typeof DashboardCuestionariosIndexRouteImport
+      parentRoute: typeof DashboardCuestionariosRouteRoute
+    }
+    '/_dashboard/cuestionarios/mis-pendientes': {
+      id: '/_dashboard/cuestionarios/mis-pendientes'
+      path: '/mis-pendientes'
+      fullPath: '/cuestionarios/mis-pendientes'
+      preLoaderRoute: typeof DashboardCuestionariosMisPendientesRouteImport
+      parentRoute: typeof DashboardCuestionariosRouteRoute
+    }
+    '/_dashboard/cuestionarios/resultados': {
+      id: '/_dashboard/cuestionarios/resultados'
+      path: '/resultados'
+      fullPath: '/cuestionarios/resultados'
+      preLoaderRoute: typeof DashboardCuestionariosResultadosRouteImport
+      parentRoute: typeof DashboardCuestionariosRouteRoute
     }
     '/_dashboard/gestion-vehicular/': {
       id: '/_dashboard/gestion-vehicular/'
@@ -1681,6 +1772,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/activos/registro-activo/nuevo'
       preLoaderRoute: typeof DashboardActivosRegistroActivoNuevoRouteImport
       parentRoute: typeof DashboardActivosRouteRoute
+    }
+    '/_dashboard/cuestionarios/$cuestionarioId/constructor': {
+      id: '/_dashboard/cuestionarios/$cuestionarioId/constructor'
+      path: '/$cuestionarioId/constructor'
+      fullPath: '/cuestionarios/$cuestionarioId/constructor'
+      preLoaderRoute: typeof DashboardCuestionariosCuestionarioIdConstructorRouteImport
+      parentRoute: typeof DashboardCuestionariosRouteRoute
     }
     '/_dashboard/gestion-vehicular/asignaciones/': {
       id: '/_dashboard/gestion-vehicular/asignaciones/'
@@ -2187,6 +2285,29 @@ const DashboardActivosRouteRouteWithChildren =
     DashboardActivosRouteRouteChildren,
   )
 
+interface DashboardCuestionariosRouteRouteChildren {
+  DashboardCuestionariosMisPendientesRoute: typeof DashboardCuestionariosMisPendientesRoute
+  DashboardCuestionariosResultadosRoute: typeof DashboardCuestionariosResultadosRoute
+  DashboardCuestionariosIndexRoute: typeof DashboardCuestionariosIndexRoute
+  DashboardCuestionariosCuestionarioIdConstructorRoute: typeof DashboardCuestionariosCuestionarioIdConstructorRoute
+}
+
+const DashboardCuestionariosRouteRouteChildren: DashboardCuestionariosRouteRouteChildren =
+  {
+    DashboardCuestionariosMisPendientesRoute:
+      DashboardCuestionariosMisPendientesRoute,
+    DashboardCuestionariosResultadosRoute:
+      DashboardCuestionariosResultadosRoute,
+    DashboardCuestionariosIndexRoute: DashboardCuestionariosIndexRoute,
+    DashboardCuestionariosCuestionarioIdConstructorRoute:
+      DashboardCuestionariosCuestionarioIdConstructorRoute,
+  }
+
+const DashboardCuestionariosRouteRouteWithChildren =
+  DashboardCuestionariosRouteRoute._addFileChildren(
+    DashboardCuestionariosRouteRouteChildren,
+  )
+
 interface DashboardGestionVehicularRouteRouteChildren {
   DashboardGestionVehicularIndexRoute: typeof DashboardGestionVehicularIndexRoute
   DashboardGestionVehicularControlesActivosNuevoRoute: typeof DashboardGestionVehicularControlesActivosNuevoRoute
@@ -2631,6 +2752,7 @@ const DashboardSeguridadRouteRouteWithChildren =
 
 interface DashboardRouteChildren {
   DashboardActivosRouteRoute: typeof DashboardActivosRouteRouteWithChildren
+  DashboardCuestionariosRouteRoute: typeof DashboardCuestionariosRouteRouteWithChildren
   DashboardGestionVehicularRouteRoute: typeof DashboardGestionVehicularRouteRouteWithChildren
   DashboardInventariosRouteRoute: typeof DashboardInventariosRouteRouteWithChildren
   DashboardMantenimientosRouteRoute: typeof DashboardMantenimientosRouteRouteWithChildren
@@ -2643,6 +2765,8 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardActivosRouteRoute: DashboardActivosRouteRouteWithChildren,
+  DashboardCuestionariosRouteRoute:
+    DashboardCuestionariosRouteRouteWithChildren,
   DashboardGestionVehicularRouteRoute:
     DashboardGestionVehicularRouteRouteWithChildren,
   DashboardInventariosRouteRoute: DashboardInventariosRouteRouteWithChildren,

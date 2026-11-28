@@ -23,10 +23,33 @@ export function isPathActive(
   return true
 }
 
-export function isNavNodeActive(pathname: string, node: NavNode): boolean {
-  if (node.to && isPathActive(pathname, node.to)) return true
+export function collectAllNavRoutes(sections: readonly NavSection[] = []): string[] {
+  const routes: string[] = []
+  const visitNode = (node: NavNode) => {
+    if (node.to) routes.push(node.to)
+    if (node.children && node.children.length > 0) {
+      for (const child of node.children) visitNode(child)
+    }
+  }
+  for (const section of sections) {
+    if (section.to) routes.push(section.to)
+    if (section.children && section.children.length > 0) {
+      for (const child of section.children) visitNode(child)
+    }
+  }
+  return routes
+}
+
+export function isNavNodeActive(
+  pathname: string,
+  node: NavNode,
+  allCandidateRoutes?: string[],
+): boolean {
+  if (node.to && isPathActive(pathname, node.to, allCandidateRoutes)) return true
   if (node.children && node.children.length > 0) {
-    return node.children.some((child) => isNavNodeActive(pathname, child))
+    return node.children.some((child) =>
+      isNavNodeActive(pathname, child, allCandidateRoutes),
+    )
   }
   return false
 }
@@ -34,10 +57,13 @@ export function isNavNodeActive(pathname: string, node: NavNode): boolean {
 export function isNavSectionActive(
   pathname: string,
   section: NavSection,
+  allCandidateRoutes?: string[],
 ): boolean {
-  if (section.to && isPathActive(pathname, section.to)) return true
+  if (section.to && isPathActive(pathname, section.to, allCandidateRoutes)) return true
   if (section.children && section.children.length > 0) {
-    return section.children.some((child) => isNavNodeActive(pathname, child))
+    return section.children.some((child) =>
+      isNavNodeActive(pathname, child, allCandidateRoutes),
+    )
   }
   return false
 }

@@ -61,6 +61,12 @@ export const SEGMENT_LABELS: Record<string, string> = {
   roles: "Roles",
   menus: "Menús",
 
+  // Cuestionarios
+  cuestionarios: "Cuestionarios",
+  "mis-pendientes": "Mis Evaluaciones",
+  resultados: "Resultados y Reportes",
+  constructor: "Constructor de Preguntas",
+
   // Gestión Vehicular
   "gestion-vehicular": "Gestión Vehicular",
   configuraciones: "Configuraciones",

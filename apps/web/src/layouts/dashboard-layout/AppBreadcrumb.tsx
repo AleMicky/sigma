@@ -35,7 +35,7 @@ export function AppBreadcrumb() {
                   <BreadcrumbPage className="font-heading font-semibold text-foreground tracking-tight truncate max-w-40 sm:max-w-60 md:max-w-none">
                     {item.title}
                   </BreadcrumbPage>
-                ) : (
+                ) : item.href ? (
                   <BreadcrumbLink
                     render={<Link to={item.href} />}
                     className="group flex min-w-0 items-center gap-1 font-medium transition-all hover:text-primary hover:scale-[1.02]"
@@ -47,6 +47,10 @@ export function AppBreadcrumb() {
                       {item.title}
                     </span>
                   </BreadcrumbLink>
+                ) : (
+                  <span className="truncate max-w-40 sm:max-w-60 md:max-w-none font-medium text-muted-foreground">
+                    {item.title}
+                  </span>
                 )}
               </BreadcrumbItem>
             </Fragment>

@@ -50,6 +50,8 @@ import { cn } from "@/shared/lib/utils"
 
 import { AuthenticatedImage } from "@/shared/components/authenticated-image"
 import { activoQueries } from "@/modules/activos/activo/api/activo.queries"
+import type { AsignacionCuestionario } from "@/modules/cuestionarios/api/cuestionario.types"
+import { CuestionarioEntidadAction } from "@/modules/cuestionarios/components/CuestionarioEntidadAction"
 import { conductorQueries } from "../../conductor/api/conductor.queries"
 import { asignacionVehicularQueries } from "../../asignacion-vehicular/api/asignacion-vehicular.queries"
 import type { AsignacionVehicular } from "../../asignacion-vehicular/api/asignacion-vehicular.service"
@@ -125,6 +127,8 @@ export interface SolicitudVehicularDetailSheetProps {
     taskName?: string,
     fields?: WorkflowField[]
   ) => void
+  cuestionarioAsignacion?: AsignacionCuestionario | null
+  onCuestionarioResponded?: () => void
 }
 
 function formatFileSize(bytes?: number): string {
@@ -994,6 +998,8 @@ export function SolicitudVehicularDetailSheet({
   onCargaCombustible,
   onViewHistory,
   onActionSelect,
+  cuestionarioAsignacion,
+  onCuestionarioResponded,
 }: Readonly<SolicitudVehicularDetailSheetProps>) {
   const { actions, fields, taskName } = useWorkflowActions(
     solicitud?.processInstanceId,
@@ -1070,6 +1076,31 @@ export function SolicitudVehicularDetailSheet({
           <SolicitudJustificacionSection solicitud={solicitud} />
 
           <SolicitudAdjuntosSection adjuntos={solicitud.adjuntos ?? []} />
+
+          {estadoFlags.estadoNorm === "FINALIZADA" && cuestionarioAsignacion && (
+            <div className="pt-4 space-y-2.5">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <ClipboardCheck className="size-3.5 text-primary" />
+                Evaluación del viaje
+              </h4>
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-card p-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground truncate">
+                    {cuestionarioAsignacion.cuestionarioNombre}
+                  </p>
+                  {cuestionarioAsignacion.evaluadoNombre ? (
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      Evaluado: {cuestionarioAsignacion.evaluadoNombre}
+                    </p>
+                  ) : null}
+                </div>
+                <CuestionarioEntidadAction
+                  asignacion={cuestionarioAsignacion}
+                  onResponded={onCuestionarioResponded}
+                />
+              </div>
+            </div>
+          )}
 
           {onViewHistory && (
             <div className="pt-4">

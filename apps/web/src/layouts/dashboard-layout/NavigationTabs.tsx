@@ -2,6 +2,7 @@ import { createElement, useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import {
   Activity,
+  BarChart3,
   Boxes,
   Briefcase,
   Building2,
@@ -94,6 +95,9 @@ const TAB_ICON_RULES: readonly TabIconRule[] = [
   { keywords: ["permisos"], icon: Key },
   { keywords: ["menus"], icon: FolderTree },
   { keywords: ["parametros", "gestion"], icon: Settings2 },
+  { keywords: ["mis-pendientes"], icon: CheckSquare },
+  { keywords: ["resultados"], icon: BarChart3 },
+  { keywords: ["cuestionarios"], icon: ClipboardList },
   { keywords: ["catalogo"], icon: LayoutGrid },
   { keywords: ["perfil"], icon: UserRound },
 ]

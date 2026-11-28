@@ -27,6 +27,8 @@ import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.
 import com.endecorani.sigma_api.modules.organizacion.infrastructure.persistence.repository.SpringVEmpleadoRepository;
 import com.endecorani.sigma_api.modules.activos.application.dto.request.CambiarEstadoOperativoRequest;
 import com.endecorani.sigma_api.modules.activos.application.service.ActivoService;
+import com.endecorani.sigma_api.modules.cuestionarios.application.service.CuestionarioAsignacionService;
+import com.endecorani.sigma_api.modules.gestionvehicular.domain.event.SolicitudVehicularFinalizadaEvent;
 import com.endecorani.sigma_api.modules.parametros.application.service.CorrelativoService;
 import com.endecorani.sigma_api.modules.parametros.domain.constant.CorrelativoCodigo;
 import com.endecorani.sigma_api.modules.workflow.application.dto.request.CompleteWorkflowTaskRequest;
@@ -38,12 +40,14 @@ import com.endecorani.sigma_api.modules.seguridad.domain.model.Usuario;
 import com.endecorani.sigma_api.modules.seguridad.domain.repository.UsuarioRepository;
 import com.endecorani.sigma_api.shared.application.pagination.PageRequestDto;
 import com.endecorani.sigma_api.shared.application.pagination.PageResponse;
+import com.endecorani.sigma_api.shared.domain.exception.BusinessException;
 import com.endecorani.sigma_api.shared.domain.exception.ConflictException;
 import com.endecorani.sigma_api.shared.domain.exception.ForbiddenException;
 import com.endecorani.sigma_api.shared.domain.exception.ResourceNotFoundException;
 import com.endecorani.sigma_api.shared.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -120,6 +124,12 @@ public class SolicitudVehicularService {
     private final SecurityUtils securityUtils;
     private final ActivoService activoService;
     private final org.springframework.context.ApplicationEventPublisher eventPublisher;
+    private CuestionarioAsignacionService cuestionarioAsignacionService;
+
+    @Autowired(required = false)
+    public void setCuestionarioAsignacionService(CuestionarioAsignacionService cuestionarioAsignacionService) {
+        this.cuestionarioAsignacionService = cuestionarioAsignacionService;
+    }
 
     @Transactional(readOnly = true)
     public PageResponse<SolicitudVehicularResponse> listar(String search, PageRequestDto pageRequest) {
@@ -350,6 +360,15 @@ public class SolicitudVehicularService {
     }
 
     private SolicitudVehicularResponse createInternal(SolicitudVehicularRequest dto) {
+        if (cuestionarioAsignacionService != null
+                && dto.solicitanteId() != null
+                && cuestionarioAsignacionService.tienePendientesObligatorias(dto.solicitanteId(), WORKFLOW_CODIGO)) {
+            throw new BusinessException(
+                    "CUESTIONARIO_OBLIGATORIO_PENDIENTE",
+                    "Tienes evaluaciones obligatorias pendientes de viajes finalizados antes de registrar una nueva solicitud"
+            );
+        }
+
         String numero = StringUtils.normalize(dto.numero());
         if (numero == null || numero.isBlank()) {
             numero = correlativoService.generar(CorrelativoCodigo.SOLICITUD_VEHICULAR, LocalDateTime.now().getYear());
@@ -493,6 +512,7 @@ public class SolicitudVehicularService {
                 effectiveRequest,
                 true);
 
+        String estadoPrevio = solicitud.getEstado();
         String accionEnviada = effectiveVariables.get("accion") != null
                 ? effectiveVariables.get("accion").toString().trim().toUpperCase()
                 : "";
@@ -530,6 +550,25 @@ public class SolicitudVehicularService {
 
         // Sincronizar estado operativo del activo vehicular (EN_CURSO/RETORNO -> EN_VIAJE, FINALIZADA -> OPERATIVO)
         sincronizarEstadoOperativoActivo(guardado, guardado.getEstado());
+
+        // Publicar evento desacoplado al transicionar realmente a estado FINALIZADA/FINALIZADO
+        if (!isRetornoEstado(estadoPrevio) && isRetornoEstado(guardado.getEstado()) && eventPublisher != null) {
+            UUID condId = resolverConductorId(guardado);
+            String conductorNombre = null;
+            if (condId != null) {
+                SolicitudVehicularConductorInfo condInfo = obtenerConductorInfo(condId);
+                if (condInfo != null) {
+                    conductorNombre = condInfo.nombreCompleto();
+                }
+            }
+            eventPublisher.publishEvent(new SolicitudVehicularFinalizadaEvent(
+                    guardado.getId(),
+                    guardado.getNumero(),
+                    guardado.getSolicitanteId(),
+                    condId,
+                    conductorNombre
+            ));
+        }
 
         return toResponse(guardado, adjuntoService.findBySolicitudVehicularId(guardado.getId()));
     }

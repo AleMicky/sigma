@@ -116,6 +116,15 @@ const moduleMeta: Record<
     gradient: "from-indigo-500/10 via-indigo-500/5 to-transparent",
     borderHover: "hover:border-indigo-500/40",
   },
+  Cuestionarios: {
+    description:
+      "Evaluaciones parametrizables, constructor de preguntas, respuestas pendientes y reportes.",
+    color: "text-sky-500 dark:text-sky-400 bg-sky-500/10",
+    badgeColor:
+      "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20",
+    gradient: "from-sky-500/10 via-sky-500/5 to-transparent",
+    borderHover: "hover:border-sky-500/40",
+  },
 }
 
 function getGreeting(date = new Date()) {

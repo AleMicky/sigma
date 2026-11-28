@@ -178,6 +178,7 @@ export const DOCUMENTED_SUBMODULE_ROUTES: Readonly<
     "/seguridad/roles",
     "/seguridad/menus",
   ],
+  "/cuestionarios": ["/cuestionarios/:cuestionarioId/constructor"],
 } as const
 
 function escapeRegExp(value: string): string {

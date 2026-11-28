@@ -16,7 +16,7 @@ import logoEndeCorani from "@/assets/logo-ende-corani.png"
 import { appConfig, isPathActive } from "@/app/config"
 import { useAllowedNavItems } from "@/shared/hooks/use-allowed-nav-items"
 import type { NavNode, NavSection } from "@/shared/types/nav.types"
-import { isNavNodeActive } from "@/shared/utils/nav.utils"
+import { collectAllNavRoutes, isNavNodeActive } from "@/shared/utils/nav.utils"
 import { Button } from "@/shared/components/ui/button"
 import { Skeleton } from "@/shared/components/ui/skeleton"
 import {
@@ -232,6 +232,10 @@ function NavigationMenu({
     select: (state) => state.location.pathname,
   })
   const { navItems: sections, isLoading } = useAllowedNavItems()
+  const allCandidateRoutes = useMemo(
+    () => collectAllNavRoutes(sections),
+    [sections],
+  )
 
   const normalizedQuery = searchQuery.trim().toLowerCase()
 
@@ -338,6 +342,7 @@ function NavigationMenu({
           key={section.id ? `${section.id}-${section.title}` : (section.code || section.title)}
           section={section}
           pathname={pathname}
+          allCandidateRoutes={allCandidateRoutes}
           isSearching={Boolean(normalizedQuery)}
         />
       ))}
@@ -352,22 +357,32 @@ function getNavNodeKey(node: NavNode): string {
   return node.id ? `${node.id}-${fallback}` : fallback
 }
 
-function checkIsSectionActive(pathname: string, section: NavSection): boolean {
-  if (section.to && isPathActive(pathname, section.to)) {
+function checkIsSectionActive(
+  pathname: string,
+  section: NavSection,
+  allCandidateRoutes: string[],
+): boolean {
+  if (section.to && isPathActive(pathname, section.to, allCandidateRoutes)) {
     return true
   }
-  return Boolean(section.children?.some((child) => isNavNodeActive(pathname, child)))
+  return Boolean(
+    section.children?.some((child) =>
+      isNavNodeActive(pathname, child, allCandidateRoutes),
+    ),
+  )
 }
 
 function NavSectionDirectLink({
   section,
   pathname,
+  allCandidateRoutes,
 }: Readonly<{
   section: NavSection
   pathname: string
+  allCandidateRoutes: string[]
 }>) {
   const to = section.to ?? ""
-  const isSelfActive = isPathActive(pathname, to)
+  const isSelfActive = isPathActive(pathname, to, allCandidateRoutes)
   const SectionIcon = section.icon || LayoutDashboard
   const color = section.color
 
@@ -412,11 +427,13 @@ function NavSectionDirectLink({
 function NavSectionCollapsed({
   section,
   pathname,
+  allCandidateRoutes,
 }: Readonly<{
   section: NavSection
   pathname: string
+  allCandidateRoutes: string[]
 }>) {
-  const isSectionActive = checkIsSectionActive(pathname, section)
+  const isSectionActive = checkIsSectionActive(pathname, section, allCandidateRoutes)
   const SectionIcon = section.icon || Folder
   const color = section.color
 
@@ -476,6 +493,7 @@ function NavSectionCollapsed({
                         key={getNavNodeKey(child)}
                         node={child}
                         pathname={pathname}
+                        allCandidateRoutes={allCandidateRoutes}
                         parentColor={color}
                       />
                     ))}
@@ -493,10 +511,12 @@ function NavSectionCollapsed({
 function NavSectionExpanded({
   section,
   pathname,
+  allCandidateRoutes,
   isSearching = false,
 }: Readonly<{
   section: NavSection
   pathname: string
+  allCandidateRoutes: string[]
   isSearching?: boolean
 }>) {
   return (
@@ -517,6 +537,7 @@ function NavSectionExpanded({
               node={child}
               depth={0}
               pathname={pathname}
+              allCandidateRoutes={allCandidateRoutes}
               isSearching={isSearching}
               parentColor={section.color}
             />
@@ -530,10 +551,12 @@ function NavSectionExpanded({
 function NavSectionGroup({
   section,
   pathname,
+  allCandidateRoutes,
   isSearching = false,
 }: Readonly<{
   section: NavSection
   pathname: string
+  allCandidateRoutes: string[]
   isSearching?: boolean
 }>) {
   const { state } = useSidebar()
@@ -541,12 +564,24 @@ function NavSectionGroup({
 
   // Sección sin hijos → enlace directo de primer nivel
   if (!hasChildren && section.to) {
-    return <NavSectionDirectLink section={section} pathname={pathname} />
+    return (
+      <NavSectionDirectLink
+        section={section}
+        pathname={pathname}
+        allCandidateRoutes={allCandidateRoutes}
+      />
+    )
   }
 
   // Vista colapsada (icon mode) → Dropdown flotante
   if (state === "collapsed") {
-    return <NavSectionCollapsed section={section} pathname={pathname} />
+    return (
+      <NavSectionCollapsed
+        section={section}
+        pathname={pathname}
+        allCandidateRoutes={allCandidateRoutes}
+      />
+    )
   }
 
   // Vista expandida → Encabezado de sección + Menús hijos
@@ -554,6 +589,7 @@ function NavSectionGroup({
     <NavSectionExpanded
       section={section}
       pathname={pathname}
+      allCandidateRoutes={allCandidateRoutes}
       isSearching={isSearching}
     />
   )
@@ -623,17 +659,25 @@ function NavNodeFolderItem({
   node,
   depth = 0,
   pathname,
+  allCandidateRoutes,
   isSearching = false,
   effectiveColor,
 }: Readonly<{
   node: NavNode
   depth?: number
   pathname: string
+  allCandidateRoutes: string[]
   isSearching?: boolean
   effectiveColor?: string | null
 }>) {
-  const isChildActive = Boolean(node.children?.some((child) => isNavNodeActive(pathname, child)))
-  const isSelfActive = node.to ? isPathActive(pathname, node.to) : false
+  const isChildActive = Boolean(
+    node.children?.some((child) =>
+      isNavNodeActive(pathname, child, allCandidateRoutes),
+    ),
+  )
+  const isSelfActive = node.to
+    ? isPathActive(pathname, node.to, allCandidateRoutes)
+    : false
   const isActive = isSelfActive || isChildActive
   const [isOpen, setIsOpen] = useNavNodeExpanded(isActive, isSearching)
 
@@ -698,6 +742,7 @@ function NavNodeFolderItem({
               node={child}
               depth={depth + 1}
               pathname={pathname}
+              allCandidateRoutes={allCandidateRoutes}
               isSearching={isSearching}
               parentColor={effectiveColor}
             />
@@ -711,13 +756,17 @@ function NavNodeFolderItem({
 function NavNodeRootLeafItem({
   node,
   pathname,
+  allCandidateRoutes,
   effectiveColor,
 }: Readonly<{
   node: NavNode
   pathname: string
+  allCandidateRoutes: string[]
   effectiveColor?: string | null
 }>) {
-  const isSelfActive = node.to ? isPathActive(pathname, node.to) : false
+  const isSelfActive = node.to
+    ? isPathActive(pathname, node.to, allCandidateRoutes)
+    : false
   const NodeIcon = node.icon || FileText
 
   return (
@@ -768,13 +817,17 @@ function NavNodeRootLeafItem({
 function NavNodeSubLeafItem({
   node,
   pathname,
+  allCandidateRoutes,
   effectiveColor,
 }: Readonly<{
   node: NavNode
   pathname: string
+  allCandidateRoutes: string[]
   effectiveColor?: string | null
 }>) {
-  const isSelfActive = node.to ? isPathActive(pathname, node.to) : false
+  const isSelfActive = node.to
+    ? isPathActive(pathname, node.to, allCandidateRoutes)
+    : false
   const NodeIcon = node.icon || FileText
 
   return (
@@ -826,12 +879,14 @@ function NavNodeItem({
   node,
   depth = 0,
   pathname,
+  allCandidateRoutes,
   isSearching = false,
   parentColor,
 }: Readonly<{
   node: NavNode
   depth?: number
   pathname: string
+  allCandidateRoutes: string[]
   isSearching?: boolean
   parentColor?: string | null
 }>) {
@@ -844,6 +899,7 @@ function NavNodeItem({
         node={node}
         depth={depth}
         pathname={pathname}
+        allCandidateRoutes={allCandidateRoutes}
         isSearching={isSearching}
         effectiveColor={effectiveColor}
       />
@@ -855,6 +911,7 @@ function NavNodeItem({
       <NavNodeRootLeafItem
         node={node}
         pathname={pathname}
+        allCandidateRoutes={allCandidateRoutes}
         effectiveColor={effectiveColor}
       />
     )
@@ -864,6 +921,7 @@ function NavNodeItem({
     <NavNodeSubLeafItem
       node={node}
       pathname={pathname}
+      allCandidateRoutes={allCandidateRoutes}
       effectiveColor={effectiveColor}
     />
   )
@@ -874,13 +932,19 @@ function NavNodeItem({
 function DropdownSubmenuNode({
   node,
   pathname,
+  allCandidateRoutes,
   effectiveColor,
 }: Readonly<{
   node: NavNode
   pathname: string
+  allCandidateRoutes: string[]
   effectiveColor?: string | null
 }>) {
-  const isAnyDescendantActive = isNavNodeActive(pathname, node)
+  const isAnyDescendantActive = isNavNodeActive(
+    pathname,
+    node,
+    allCandidateRoutes,
+  )
   const NodeIcon = node.icon || Folder
 
   return (
@@ -913,6 +977,7 @@ function DropdownSubmenuNode({
             key={getNavNodeKey(child)}
             node={child}
             pathname={pathname}
+            allCandidateRoutes={allCandidateRoutes}
             parentColor={effectiveColor}
           />
         ))}
@@ -924,13 +989,17 @@ function DropdownSubmenuNode({
 function DropdownLeafNode({
   node,
   pathname,
+  allCandidateRoutes,
   effectiveColor,
 }: Readonly<{
   node: NavNode
   pathname: string
+  allCandidateRoutes: string[]
   effectiveColor?: string | null
 }>) {
-  const isSelfActive = node.to ? isPathActive(pathname, node.to) : false
+  const isSelfActive = node.to
+    ? isPathActive(pathname, node.to, allCandidateRoutes)
+    : false
   const NodeIcon = node.icon || FileText
 
   return (
@@ -964,10 +1033,12 @@ function DropdownLeafNode({
 function DropdownRecursiveNode({
   node,
   pathname,
+  allCandidateRoutes,
   parentColor,
 }: Readonly<{
   node: NavNode
   pathname: string
+  allCandidateRoutes: string[]
   parentColor?: string | null
 }>) {
   const effectiveColor = node.color || parentColor
@@ -978,6 +1049,7 @@ function DropdownRecursiveNode({
       <DropdownSubmenuNode
         node={node}
         pathname={pathname}
+        allCandidateRoutes={allCandidateRoutes}
         effectiveColor={effectiveColor}
       />
     )
@@ -987,6 +1059,7 @@ function DropdownRecursiveNode({
     <DropdownLeafNode
       node={node}
       pathname={pathname}
+      allCandidateRoutes={allCandidateRoutes}
       effectiveColor={effectiveColor}
     />
   )
